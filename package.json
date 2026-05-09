@@ -36,10 +36,14 @@
     "build": "pkgroll",
     "lint": "eslint ."
   },
+  "peerDependencies": {
+    "@xsai-ext/responses": "0.5.0-beta.3"
+  },
   "devDependencies": {
     "@antfu/eslint-config": "^8.2.0",
     "@moeru/eslint-config": "0.1.0-beta.18",
     "@moeru/tsconfig": "0.1.0-beta.18",
+    "@xsai-ext/responses": "0.5.0-beta.3",
     "bumpp": "^11.1.0",
     "eslint": "^10.2.0",
     "pkgroll": "^2.27.0",

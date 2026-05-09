@@ -17,6 +17,9 @@ importers:
       '@moeru/tsconfig':
         specifier: 0.1.0-beta.18
         version: 0.1.0-beta.18
+      '@xsai-ext/responses':
+        specifier: 0.5.0-beta.3
+        version: 0.5.0-beta.3
       bumpp:
         specifier: ^11.1.0
         version: 11.1.0
@@ -909,6 +912,21 @@ packages:
 
   '@vue/shared@3.5.34':
     resolution: {integrity: sha512-24uqU4OIiX29ryC3MeWid/Xf2fa2EFRUVLb77nRhk+UrTVrh/XiGtFAFmJBAtBRbjwNdsPRP+jj/OL27Eg1NDA==}
+
+  '@xsai-ext/responses@0.5.0-beta.3':
+    resolution: {integrity: sha512-AjDnpQCmu2pG1I88s3n1YJH15X1z17qtht1rRZ2fiPM+PAkvg7lFJqQTlw6N5KS5bKHUA1r8F5oDdKqXDOmZ/Q==}
+
+  '@xsai/shared-chat@0.5.0-beta.3':
+    resolution: {integrity: sha512-F404U8MDh24bn9yGUHIdxpeuevu0HS+bGj+noWYmDq6WB9Kn99TjRpRbWp0EVESuIe2FkfDLu0MFL1JVg+ocNg==}
+
+  '@xsai/shared-stream@0.5.0-beta.3':
+    resolution: {integrity: sha512-rCX88zuXtT3uADnW/gx/ptsDU5nWAMwv7VxMCtAKXjdhnm9cz0IBN1CWt61jo0lBWeymOJrOtEC/u+Ih4ghhag==}
+
+  '@xsai/shared@0.5.0-beta.3':
+    resolution: {integrity: sha512-OKC5mXjBWqCcF/+di+fPIIvJF6JJOMLsVpO3ZbPV4XktucFbY839yUNP50fLgu51Ma3mQd6Bq9R8k2zvfyxjig==}
+
+  '@xsai/tool@0.5.0-beta.3':
+    resolution: {integrity: sha512-ANwPJQJd7/Pc/8hWRF3nxNQWtuI1hB8HQTz4+R+NVDb8WvzFYZp+RRdlePEuTGWjGc6iRA/hcWES5lrnqzdT5w==}
 
   acorn-jsx@5.3.2:
     resolution: {integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==}
@@ -2035,6 +2053,29 @@ packages:
     resolution: {integrity: sha512-ICP2e+jsHvAj2E2lIHxa5tjXRlKDJo4IdvPvCXbXQGdzSfmSpNVyIKMvoZHjDY9DP0zV17iI85o90vRFXNccRw==}
     engines: {node: '>=12'}
 
+  xsschema@0.5.0-beta.3:
+    resolution: {integrity: sha512-p34jDyw3ih5O8HbyHgpWYKrJcPhwZnNzeytgu3XxgakAIOwHZMJ1/HGKmAZvTmGZJSIXtozUMv+7LjUomnEg5Q==}
+    peerDependencies:
+      '@valibot/to-json-schema': ^1.0.0
+      arktype: ^2.1.20
+      effect: ^3.16.0
+      sury: ^10.0.0 || ^11.0.0-alpha
+      zod: ^3.25.0 || ^4.0.0
+      zod-to-json-schema: ^3.25.0
+    peerDependenciesMeta:
+      '@valibot/to-json-schema':
+        optional: true
+      arktype:
+        optional: true
+      effect:
+        optional: true
+      sury:
+        optional: true
+      zod:
+        optional: true
+      zod-to-json-schema:
+        optional: true
+
   yaml-eslint-parser@2.0.0:
     resolution: {integrity: sha512-h0uDm97wvT2bokfwwTmY6kJ1hp6YDFL0nRHwNKz8s/VD1FH/vvZjAKoMUE+un0eaYBSG7/c6h+lJTP+31tjgTw==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
@@ -2751,6 +2792,43 @@ snapshots:
       '@vue/shared': 3.5.34
 
   '@vue/shared@3.5.34': {}
+
+  '@xsai-ext/responses@0.5.0-beta.3':
+    dependencies:
+      '@xsai/shared': 0.5.0-beta.3
+      '@xsai/shared-chat': 0.5.0-beta.3
+      '@xsai/shared-stream': 0.5.0-beta.3
+      '@xsai/tool': 0.5.0-beta.3
+    transitivePeerDependencies:
+      - '@valibot/to-json-schema'
+      - arktype
+      - effect
+      - sury
+      - zod
+      - zod-to-json-schema
+
+  '@xsai/shared-chat@0.5.0-beta.3':
+    dependencies:
+      '@xsai/shared': 0.5.0-beta.3
+
+  '@xsai/shared-stream@0.5.0-beta.3':
+    dependencies:
+      '@xsai/shared': 0.5.0-beta.3
+
+  '@xsai/shared@0.5.0-beta.3': {}
+
+  '@xsai/tool@0.5.0-beta.3':
+    dependencies:
+      '@xsai/shared': 0.5.0-beta.3
+      '@xsai/shared-chat': 0.5.0-beta.3
+      xsschema: 0.5.0-beta.3
+    transitivePeerDependencies:
+      - '@valibot/to-json-schema'
+      - arktype
+      - effect
+      - sury
+      - zod
+      - zod-to-json-schema
 
   acorn-jsx@5.3.2(acorn@8.16.0):
     dependencies:
@@ -4137,6 +4215,8 @@ snapshots:
   word-wrap@1.2.5: {}
 
   xml-name-validator@4.0.0: {}
+
+  xsschema@0.5.0-beta.3: {}
 
   yaml-eslint-parser@2.0.0:
     dependencies:
