@@ -1,0 +1,46 @@
+{
+  "name": "xsai-codex",
+  "type": "module",
+  "version": "0.0.1",
+  "packageManager": "pnpm@10.33.0",
+  "description": "OpenAI Codex provider for xsAI.",
+  "author": "Moeru AI",
+  "license": "MIT",
+  "homepage": "https://github.com/moeru-ai/xsai-codex",
+  "repository": "github:moeru-ai/xsai-codex",
+  "bugs": "https://github.com/moeru-ai/xsai-codex/issues",
+  "keywords": [
+    "xsai",
+    "openai",
+    "codex"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "./package.json": "./package.json"
+    },
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts"
+  },
+  "scripts": {
+    "build": "pkgroll"
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "^8.2.0",
+    "@moeru/eslint-config": "0.1.0-beta.18",
+    "@moeru/tsconfig": "0.1.0-beta.18",
+    "bumpp": "^11.1.0",
+    "eslint": "^10.2.0",
+    "pkgroll": "^2.27.0"
+  }
+}

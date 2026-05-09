@@ -1,0 +1,10 @@
+{
+  "extends": "@moeru/tsconfig",
+  // "compilerOptions": {
+  //   "types": ["node"]
+  // },
+  "include": [
+    "src",
+    "test"
+  ]
+}
