@@ -33,7 +33,8 @@
     "types": "./dist/index.d.ts"
   },
   "scripts": {
-    "build": "pkgroll"
+    "build": "pkgroll",
+    "lint": "eslint ."
   },
   "devDependencies": {
     "@antfu/eslint-config": "^8.2.0",
@@ -41,6 +42,7 @@
     "@moeru/tsconfig": "0.1.0-beta.18",
     "bumpp": "^11.1.0",
     "eslint": "^10.2.0",
-    "pkgroll": "^2.27.0"
+    "pkgroll": "^2.27.0",
+    "tsx": "^4.21.0"
   }
 }

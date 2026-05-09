@@ -32,6 +32,7 @@ words:
   - granularities
   - Groq
   - hexgrad
+  - hrann
   - Hunyuan
   - importantimport
   - koemotion
@@ -49,6 +50,7 @@ words:
   - minzipped
   - mistralai
   - mixtral
+  - Moam
   - modelcontextprotocol
   - moeru
   - moeru-ai
