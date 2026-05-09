@@ -6,12 +6,15 @@ Requires Baseline 2025 [`Uint8Array.fromBase64`](https://developer.mozilla.org/e
 
 ## Usage
 
+> For more examples, please refer to the [xsAI Docs](https://xsai.js.org/docs/packages-ext/responses).
+
 ```ts
 import { responses } from '@xsai-ext/responses'
 import { authorizeCodexHeadless, createCodex } from 'xsai-codex'
 
 const auth = await authorizeCodexHeadless({
   onUserCode: ({ instructions }) => {
+    // Open https://auth.openai.com/codex/device and enter code: XXXX-XXXXX
     console.log(instructions)
   },
 })
