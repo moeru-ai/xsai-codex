@@ -58,6 +58,15 @@ const sleep = async (ms: number): Promise<void> =>
 // eslint-disable-next-line @masknet/prefer-timer-id
   new Promise(resolve => setTimeout(resolve, ms))
 
+const formatResponseError = async (message: string, response: Response): Promise<string> => {
+  const body = await response.text().catch(() => '')
+  const details = body.trim().slice(0, 500)
+
+  return details.length > 0
+    ? `${message}: ${response.status} ${details}`
+    : `${message}: ${response.status}`
+}
+
 const jsonFetch = async <T>(
   url: string,
   init: RequestInit,
@@ -66,7 +75,7 @@ const jsonFetch = async <T>(
   const response = await fetch(url, init)
 
   if (!response.ok) {
-    throw new Error(`${errorMessage}: ${response.status}`)
+    throw new Error(await formatResponseError(errorMessage, response))
   }
 
   return response.json() as Promise<T>
@@ -200,7 +209,7 @@ export const authorizeCodexHeadless = async (
     }
 
     if (response.status !== 403 && response.status !== 404) {
-      throw new Error(`Codex device authorization failed: ${response.status}`)
+      throw new Error(await formatResponseError('Codex device authorization failed', response))
     }
 
     await sleep(interval + CODEX_OAUTH_POLLING_SAFETY_MARGIN_MS)

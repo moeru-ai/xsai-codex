@@ -2,6 +2,8 @@
 
 OpenAI Codex provider for xsAI.
 
+Requires Baseline 2025 [`Uint8Array.fromBase64`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array/fromBase64) support.
+
 ## Usage
 
 ```ts
