@@ -18,6 +18,7 @@ export interface CodexAuthTokens {
 
 export interface CodexHeadlessAuthorizeOptions {
   onUserCode?: (info: CodexUserCodeInfo) => Promise<void> | void
+  signal?: AbortSignal
 }
 
 export interface CodexIdTokenClaims {
@@ -33,7 +34,7 @@ export interface CodexTokenResponse {
   access_token: string
   expires_in?: number
   id_token?: string
-  refresh_token: string
+  refresh_token?: string
 }
 
 export interface CodexUserCodeInfo {
@@ -54,9 +55,20 @@ interface CodexDeviceTokenResponse {
   code_verifier: string
 }
 
-const sleep = async (ms: number): Promise<void> =>
-// eslint-disable-next-line @masknet/prefer-timer-id
-  new Promise(resolve => setTimeout(resolve, ms))
+const sleep = async (ms: number, signal?: AbortSignal): Promise<void> => {
+  if (signal?.aborted) {
+    throw signal.reason
+  }
+
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(resolve, ms)
+
+    signal?.addEventListener('abort', () => {
+      clearTimeout(timer)
+      reject(signal.reason)
+    }, { once: true })
+  })
+}
 
 const formatResponseError = async (message: string, response: Response): Promise<string> => {
   const body = await response.text().catch(() => '')
@@ -122,13 +134,25 @@ export const extractAccountId = (tokens: Pick<CodexTokenResponse, 'access_token'
 
 export const toCodexAuthTokens = (
   tokens: CodexTokenResponse,
-  accountId = extractAccountId(tokens),
-): CodexAuthTokens => ({
-  access: tokens.access_token,
-  expires: Date.now() + (tokens.expires_in ?? 3600) * 1000,
-  refresh: tokens.refresh_token,
-  ...(accountId !== undefined && accountId.length > 0 && { accountId }),
-})
+  options: {
+    accountId?: string
+    refreshToken?: string
+  } = {},
+): CodexAuthTokens => {
+  const accountId = options.accountId ?? extractAccountId(tokens)
+  const refresh = tokens.refresh_token ?? options.refreshToken
+
+  if (refresh === undefined || refresh.length === 0) {
+    throw new Error('Codex token response did not include a refresh token.')
+  }
+
+  return {
+    access: tokens.access_token,
+    ...(accountId !== undefined && accountId.length > 0 && { accountId }),
+    expires: Date.now() + (tokens.expires_in ?? 3600) * 1000,
+    refresh,
+  }
+}
 
 export const refreshCodexAccessToken = async (
   refreshToken: string,
@@ -147,7 +171,7 @@ export const refreshCodexAccessToken = async (
     'Codex token refresh failed',
   )
 
-  return toCodexAuthTokens(tokens)
+  return toCodexAuthTokens(tokens, { refreshToken })
 }
 
 export const authorizeCodexHeadless = async (
@@ -162,6 +186,7 @@ export const authorizeCodexHeadless = async (
         'User-Agent': CODEX_DEFAULT_USER_AGENT,
       },
       method: 'POST',
+      signal: options.signal,
     },
     'Failed to initiate Codex device authorization',
   )
@@ -185,6 +210,7 @@ export const authorizeCodexHeadless = async (
         'User-Agent': CODEX_DEFAULT_USER_AGENT,
       },
       method: 'POST',
+      signal: options.signal,
     })
 
     if (response.ok) {
@@ -201,6 +227,7 @@ export const authorizeCodexHeadless = async (
           }).toString(),
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           method: 'POST',
+          signal: options.signal,
         },
         'Codex token exchange failed',
       )
@@ -212,6 +239,6 @@ export const authorizeCodexHeadless = async (
       throw new Error(await formatResponseError('Codex device authorization failed', response))
     }
 
-    await sleep(interval + CODEX_OAUTH_POLLING_SAFETY_MARGIN_MS)
+    await sleep(interval + CODEX_OAUTH_POLLING_SAFETY_MARGIN_MS, options.signal)
   }
 }
