@@ -8,7 +8,6 @@ import {
   CODEX_BASE_URL,
   CODEX_DEFAULT_ORIGINATOR,
   CODEX_DEFAULT_USER_AGENT,
-  CODEX_DUMMY_API_KEY,
   CODEX_TOKEN_REFRESH_MARGIN_MS,
 } from './const'
 
@@ -44,10 +43,9 @@ export const createCodex = async (options: CreateCodexOptions): Promise<CreateCo
     const auth = await resolveAuth()
 
     return {
-      apiKey: CODEX_DUMMY_API_KEY,
+      apiKey: auth.access,
       baseURL: CODEX_BASE_URL,
       headers: {
-        'Authorization': `Bearer ${auth.access}`,
         ...(auth.accountId !== undefined && auth.accountId.length > 0 && { 'ChatGPT-Account-Id': auth.accountId }),
         'originator': options.originator ?? CODEX_DEFAULT_ORIGINATOR,
         'User-Agent': options.userAgent ?? CODEX_DEFAULT_USER_AGENT,

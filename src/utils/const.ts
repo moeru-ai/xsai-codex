@@ -10,7 +10,6 @@ export const CODEX_DEVICE_REDIRECT_URL = `${CODEX_ISSUER}/deviceauth/callback`
 
 export const CODEX_OAUTH_POLLING_SAFETY_MARGIN_MS = 3000
 export const CODEX_TOKEN_REFRESH_MARGIN_MS = 60_000
-export const CODEX_DUMMY_API_KEY = 'codex-oauth'
 export const CODEX_DEFAULT_ORIGINATOR = 'xsai-codex'
 export const CODEX_DEFAULT_USER_AGENT = `xsai-codex/${version}`
 
