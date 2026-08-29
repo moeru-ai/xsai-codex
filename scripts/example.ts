@@ -102,7 +102,7 @@ const runDemo = async (auth: CodexAuthTokens, existingEnv: string): Promise<stri
     },
   })
   const result = responses({
-    ...(await codex('gpt-5.4-mini')),
+    ...(await codex('gpt-5.6-luna')),
     input: 'Hello!',
     instructions: 'You\'re a helpful assistant.',
     // maxOutputTokens: 80,
@@ -157,7 +157,7 @@ try {
     try {
       const text = await runDemo(existingAuth, existingEnv)
 
-      note(text, 'gpt-5.4-mini')
+      note(text, 'gpt-5.6-luna')
       outro('Existing Codex auth works.')
       exit(0)
     }
@@ -186,7 +186,7 @@ try {
 
   const text = await runDemo(auth, existingEnv)
 
-  note(text, 'gpt-5.4-mini')
+  note(text, 'gpt-5.6-luna')
   outro('Codex auth is ready.')
 }
 catch (error) {
