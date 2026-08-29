@@ -22,7 +22,7 @@ const auth = await authorizeCodexHeadless({
 const codex = await createCodex({ auth })
 
 const result = responses({
-  ...(await codex('gpt-5.5')),
+  ...(await codex('gpt-5.6-luna')),
   input: 'Write a small TypeScript function.',
   instructions: 'You\'re a helpful assistant.',
   // maxOutputTokens: 0 // Codex doesn't support `maxOutputTokens`.
