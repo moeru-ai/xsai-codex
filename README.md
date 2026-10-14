@@ -2,33 +2,36 @@
 
 OpenAI Codex provider for xsAI.
 
-Requires Baseline 2025 [`Uint8Array.fromBase64`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array/fromBase64) support.
+```bash
+pnpm add xsai-codex @xsai/shared @xsai/text @xsai/text-responses
+```
 
 ## Usage
 
-> For more examples, please refer to the [xsAI Docs](https://xsai.js.org/docs/packages-ext/responses).
+Enable [device code authentication](https://learn.chatgpt.com/docs/auth#login-on-headless-devices) in your ChatGPT settings.
+Open the URL shown in the terminal. Enter the code.
 
 ```ts
-import { responses } from '@xsai-ext/responses'
+import { generateText } from '@xsai/text'
 import { authorizeCodexHeadless, createCodex } from 'xsai-codex'
 
 const auth = await authorizeCodexHeadless({
   onUserCode: ({ instructions }) => {
-    // Open https://auth.openai.com/codex/device and enter code: XXXX-XXXXX
     console.log(instructions)
   },
 })
 
 const codex = await createCodex({ auth })
 
-const result = responses({
-  ...(await codex('gpt-5.6-luna')),
+const result = await generateText(codex('gpt-6.1-sol'), {
   input: 'Write a small TypeScript function.',
   instructions: 'You\'re a helpful assistant.',
-  // maxOutputTokens: 0 // Codex doesn't support `maxOutputTokens`.
-  store: false, // `store` must be `false`.
 })
+
+console.log(result.text)
 ```
+
+The provider refreshes tokens before they expire. Use `onAuthUpdate` to save the new tokens.
 
 ### Example
 
@@ -38,6 +41,8 @@ cd xsai-codex
 pnpm i
 pnpm dev
 ```
+
+The example saves tokens in `.env.local`.
 
 ## License
 

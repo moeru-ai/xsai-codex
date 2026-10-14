@@ -5,7 +5,7 @@ import { resolve } from 'node:path'
 import { cwd, env, exit, loadEnvFile } from 'node:process'
 
 import { confirm, intro, isCancel, log, note, outro, spinner } from '@clack/prompts'
-import { responses } from '@xsai-ext/responses'
+import { generateText } from '@xsai/text'
 
 import { authorizeCodexHeadless, createCodex } from '../src/index'
 
@@ -22,9 +22,8 @@ const authFromEnv = (): CodexAuthTokens | undefined => {
   const refresh = env.CODEX_REFRESH_TOKEN
   const expiresAt = env.CODEX_EXPIRES_AT
 
-  if (access === undefined || refresh === undefined || expiresAt === undefined) {
+  if (access === undefined || refresh === undefined || expiresAt === undefined)
     return undefined
-  }
 
   const expires = Date.parse(expiresAt)
 
@@ -34,7 +33,7 @@ const authFromEnv = (): CodexAuthTokens | undefined => {
 
   return {
     access,
-    ...(env.CODEX_ACCOUNT_ID !== undefined && env.CODEX_ACCOUNT_ID.length > 0 && { accountId: env.CODEX_ACCOUNT_ID }),
+    accountId: env.CODEX_ACCOUNT_ID,
     expires,
     refresh,
   }
@@ -93,30 +92,18 @@ const persistAuth = async (existingEnv: string, auth: CodexAuthTokens): Promise<
 }
 
 const runDemo = async (auth: CodexAuthTokens, existingEnv: string): Promise<string> => {
-  let latestAuth = auth
   const codex = await createCodex({
     auth,
     onAuthUpdate: async (nextAuth) => {
-      latestAuth = nextAuth
       await persistAuth(existingEnv, nextAuth)
     },
   })
-  const result = responses({
-    ...(await codex('gpt-5.6-luna')),
+  const result = await generateText(codex('gpt-6-luna'), {
     input: 'Hello!',
     instructions: 'You\'re a helpful assistant.',
-    // maxOutputTokens: 80,
-    reasoning: { effort: 'none' },
-    store: false,
+    reasoningEffort: 'low',
   })
-
-  const text = await Array.fromAsync(result.textStream).then(chunks => chunks.join(''))
-
-  if (latestAuth !== auth) {
-    Object.assign(auth, latestAuth)
-  }
-
-  return text
+  return result.text
 }
 
 const signIn = async (): Promise<CodexAuthTokens> => {
@@ -157,7 +144,7 @@ try {
     try {
       const text = await runDemo(existingAuth, existingEnv)
 
-      note(text, 'gpt-5.6-luna')
+      note(text, 'gpt-6-luna')
       outro('Existing Codex auth works.')
       exit(0)
     }
@@ -186,7 +173,7 @@ try {
 
   const text = await runDemo(auth, existingEnv)
 
-  note(text, 'gpt-5.6-luna')
+  note(text, 'gpt-6-luna')
   outro('Codex auth is ready.')
 }
 catch (error) {

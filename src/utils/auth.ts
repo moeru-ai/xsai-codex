@@ -1,3 +1,6 @@
+import { sleepWithAbort } from '@moeru/std/sleep'
+import { HttpError, sendRequest } from '@xsai/shared'
+
 import {
   CODEX_CLIENT_ID,
   CODEX_DEFAULT_USER_AGENT,
@@ -5,6 +8,7 @@ import {
   CODEX_DEVICE_REDIRECT_URL,
   CODEX_DEVICE_TOKEN_URL,
   CODEX_DEVICE_URL,
+  CODEX_ISSUER,
   CODEX_OAUTH_POLLING_SAFETY_MARGIN_MS,
   CODEX_TOKEN_URL,
 } from './const'
@@ -21,22 +25,6 @@ export interface CodexHeadlessAuthorizeOptions {
   signal?: AbortSignal
 }
 
-export interface CodexIdTokenClaims {
-  'chatgpt_account_id'?: string
-  'email'?: string
-  'https://api.openai.com/auth'?: {
-    chatgpt_account_id?: string
-  }
-  'organizations'?: Array<{ id: string }>
-}
-
-export interface CodexTokenResponse {
-  access_token: string
-  expires_in?: number
-  id_token?: string
-  refresh_token?: string
-}
-
 export interface CodexUserCodeInfo {
   instructions: string
   interval: number
@@ -46,6 +34,7 @@ export interface CodexUserCodeInfo {
 
 interface CodexDeviceAuthResponse {
   device_auth_id: string
+  expires_in?: number
   interval?: number | string
   user_code: string
 }
@@ -55,142 +44,103 @@ interface CodexDeviceTokenResponse {
   code_verifier: string
 }
 
-const sleep = async (ms: number, signal?: AbortSignal): Promise<void> => {
-  if (signal?.aborted) {
-    throw signal.reason
+interface CodexIdTokenClaims {
+  'chatgpt_account_id'?: string
+  'https://api.openai.com/auth'?: {
+    chatgpt_account_id?: string
   }
+}
 
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(resolve, ms)
+interface CodexTokenResponse {
+  access_token: string
+  expires_in?: number
+  id_token?: string
+  refresh_token?: string
+}
 
-    signal?.addEventListener('abort', () => {
-      clearTimeout(timer)
-      reject(signal.reason)
-    }, { once: true })
+// sendRequest only serializes JSON or multipart bodies; OAuth requires URL encoding.
+const requestTokens = async (body: Record<string, string>, signal?: AbortSignal): Promise<CodexTokenResponse> => {
+  const response = await fetch(CODEX_TOKEN_URL, {
+    body: new URLSearchParams({ client_id: CODEX_CLIENT_ID, ...body }),
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    method: 'POST',
+    signal,
   })
+  if (!response.ok)
+    throw new HttpError({ body: await response.text(), headers: response.headers, status: response.status })
+  return response.json() as Promise<CodexTokenResponse>
 }
-
-const formatResponseError = async (message: string, response: Response): Promise<string> => {
-  const body = await response.text().catch(() => '')
-  const details = body.trim().slice(0, 500)
-
-  return details.length > 0
-    ? `${message}: ${response.status} ${details}`
-    : `${message}: ${response.status}`
-}
-
-const jsonFetch = async <T>(
-  url: string,
-  init: RequestInit,
-  errorMessage: string,
-): Promise<T> => {
-  const response = await fetch(url, init)
-
-  if (!response.ok) {
-    throw new Error(await formatResponseError(errorMessage, response))
-  }
-
-  return response.json() as Promise<T>
-}
-
-export const parseJwtClaims = (token: string): CodexIdTokenClaims | undefined => {
-  const parts = token.split('.')
-
-  if (parts.length !== 3) {
-    return undefined
-  }
-
-  try {
-    const payload = parts[1]
-    const bytes = Uint8Array.fromBase64(payload, { alphabet: 'base64url' })
-
-    return JSON.parse(new TextDecoder().decode(bytes)) as CodexIdTokenClaims
-  }
-  catch {
-    return undefined
-  }
-}
-
-export const extractAccountIdFromClaims = (claims: CodexIdTokenClaims): string | undefined => (
-  claims.chatgpt_account_id
-  ?? claims['https://api.openai.com/auth']?.chatgpt_account_id
-  ?? claims.organizations?.[0]?.id
-)
 
 export const extractAccountId = (tokens: Pick<CodexTokenResponse, 'access_token' | 'id_token'>): string | undefined => {
-  if (tokens.id_token !== undefined && tokens.id_token.length > 0) {
-    const claims = parseJwtClaims(tokens.id_token)
-    const accountId = claims === undefined ? undefined : extractAccountIdFromClaims(claims)
-
-    if (accountId !== undefined && accountId.length > 0) {
-      return accountId
+  for (const token of [tokens.access_token, tokens.id_token]) {
+    if (typeof token !== 'string')
+      continue
+    const parts = token.split('.')
+    if (parts.length !== 3)
+      continue
+    try {
+      const bytes = Uint8Array.fromBase64(parts[1], { alphabet: 'base64url' })
+      const claims = JSON.parse(new TextDecoder().decode(bytes)) as CodexIdTokenClaims
+      const accountId = claims?.['https://api.openai.com/auth']?.chatgpt_account_id ?? claims?.chatgpt_account_id
+      if (typeof accountId === 'string' && accountId.length > 0)
+        return accountId
+    }
+    catch {
+      // An opaque or malformed token may still have a usable ID-token fallback.
     }
   }
-
-  const claims = parseJwtClaims(tokens.access_token)
-
-  return claims === undefined ? undefined : extractAccountIdFromClaims(claims)
 }
 
-export const toCodexAuthTokens = (
+const toCodexAuthTokens = (
   tokens: CodexTokenResponse,
-  options: {
-    accountId?: string
-    refreshToken?: string
-  } = {},
+  refreshToken?: string,
 ): CodexAuthTokens => {
-  const accountId = options.accountId ?? extractAccountId(tokens)
-  const refresh = tokens.refresh_token ?? options.refreshToken
+  const accountId = extractAccountId(tokens)
+  const refresh = tokens.refresh_token ?? refreshToken
 
-  if (refresh === undefined || refresh.length === 0) {
+  if (typeof tokens.access_token !== 'string' || tokens.access_token.length === 0) {
+    throw new Error('Codex token response did not include an access token.')
+  }
+  if (typeof refresh !== 'string' || refresh.length === 0) {
     throw new Error('Codex token response did not include a refresh token.')
+  }
+  if (typeof tokens.expires_in !== 'number' || !Number.isFinite(tokens.expires_in) || tokens.expires_in <= 0) {
+    throw new Error('Codex token response did not include a valid expiration.')
   }
 
   return {
     access: tokens.access_token,
     ...(accountId !== undefined && accountId.length > 0 && { accountId }),
-    expires: Date.now() + (tokens.expires_in ?? 3600) * 1000,
+    expires: Date.now() + tokens.expires_in * 1000,
     refresh,
   }
 }
 
 export const refreshCodexAccessToken = async (
   refreshToken: string,
+  signal?: AbortSignal,
 ): Promise<CodexAuthTokens> => {
-  const tokens = await jsonFetch<CodexTokenResponse>(
-    CODEX_TOKEN_URL,
-    {
-      body: new URLSearchParams({
-        client_id: CODEX_CLIENT_ID,
-        grant_type: 'refresh_token',
-        refresh_token: refreshToken,
-      }).toString(),
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      method: 'POST',
-    },
-    'Codex token refresh failed',
-  )
+  const tokens = await requestTokens({ grant_type: 'refresh_token', refresh_token: refreshToken }, signal)
 
-  return toCodexAuthTokens(tokens, { refreshToken })
+  return toCodexAuthTokens(tokens, refreshToken)
 }
 
 export const authorizeCodexHeadless = async (
   options: CodexHeadlessAuthorizeOptions = {},
 ): Promise<CodexAuthTokens> => {
-  const deviceData = await jsonFetch<CodexDeviceAuthResponse>(
-    CODEX_DEVICE_AUTH_URL,
-    {
-      body: JSON.stringify({ client_id: CODEX_CLIENT_ID }),
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': CODEX_DEFAULT_USER_AGENT,
-      },
-      method: 'POST',
-      signal: options.signal,
-    },
-    'Failed to initiate Codex device authorization',
-  )
-  const interval = Math.max(Number.parseInt(String(deviceData.interval ?? 5)), 1) * 1000
+  const signal = options.signal === undefined
+    ? AbortSignal.timeout(15 * 60_000)
+    : AbortSignal.any([options.signal, AbortSignal.timeout(15 * 60_000)])
+  const httpOptions = { baseURL: CODEX_ISSUER, headers: { 'User-Agent': CODEX_DEFAULT_USER_AGENT } }
+  const deviceResponse = await sendRequest({
+    body: { client_id: CODEX_CLIENT_ID },
+    path: CODEX_DEVICE_AUTH_URL,
+    signal,
+  }, httpOptions)
+  const deviceData = await deviceResponse.json() as CodexDeviceAuthResponse
+  const pollSeconds = Number.parseFloat(String(deviceData.interval ?? 5))
+  const interval = (Number.isFinite(pollSeconds) ? Math.max(pollSeconds, 1) : 5) * 1000
+  const expires = Date.now() + (deviceData.expires_in ?? 15 * 60) * 1000
 
   await options.onUserCode?.({
     instructions: `Open ${CODEX_DEVICE_URL} and enter code: ${deviceData.user_code}`,
@@ -200,45 +150,30 @@ export const authorizeCodexHeadless = async (
   })
 
   while (true) {
-    const response = await fetch(CODEX_DEVICE_TOKEN_URL, {
-      body: JSON.stringify({
-        device_auth_id: deviceData.device_auth_id,
-        user_code: deviceData.user_code,
-      }),
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': CODEX_DEFAULT_USER_AGENT,
-      },
-      method: 'POST',
-      signal: options.signal,
-    })
-
-    if (response.ok) {
-      const deviceToken = await response.json() as CodexDeviceTokenResponse
-      const tokens = await jsonFetch<CodexTokenResponse>(
-        CODEX_TOKEN_URL,
-        {
-          body: new URLSearchParams({
-            client_id: CODEX_CLIENT_ID,
-            code: deviceToken.authorization_code,
-            code_verifier: deviceToken.code_verifier,
-            grant_type: 'authorization_code',
-            redirect_uri: CODEX_DEVICE_REDIRECT_URL,
-          }).toString(),
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          method: 'POST',
-          signal: options.signal,
-        },
-        'Codex token exchange failed',
-      )
-
-      return toCodexAuthTokens(tokens)
+    signal.throwIfAborted()
+    if (Date.now() >= expires)
+      throw new Error('Codex device authorization expired. Please sign in again.')
+    let response: Response
+    try {
+      response = await sendRequest({
+        body: { device_auth_id: deviceData.device_auth_id, user_code: deviceData.user_code },
+        path: CODEX_DEVICE_TOKEN_URL,
+        signal,
+      }, httpOptions)
     }
-
-    if (response.status !== 403 && response.status !== 404) {
-      throw new Error(await formatResponseError('Codex device authorization failed', response))
+    catch (error) {
+      if (!(error instanceof HttpError) || (error.status !== 403 && error.status !== 404))
+        throw error
+      await sleepWithAbort(interval + CODEX_OAUTH_POLLING_SAFETY_MARGIN_MS, signal)
+      continue
     }
-
-    await sleep(interval + CODEX_OAUTH_POLLING_SAFETY_MARGIN_MS, options.signal)
+    const deviceToken = await response.json() as CodexDeviceTokenResponse
+    const tokens = await requestTokens({
+      code: deviceToken.authorization_code,
+      code_verifier: deviceToken.code_verifier,
+      grant_type: 'authorization_code',
+      redirect_uri: CODEX_DEVICE_REDIRECT_URL,
+    }, signal)
+    return toCodexAuthTokens(tokens)
   }
 }

@@ -13,5 +13,4 @@ export const CODEX_TOKEN_REFRESH_MARGIN_MS = 60_000
 export const CODEX_DEFAULT_ORIGINATOR = 'xsai-codex'
 export const CODEX_DEFAULT_USER_AGENT = `xsai-codex/${version}`
 
-export const CODEX_BASE_URL
-  = 'https://chatgpt.com/backend-api/codex/'
+export const CODEX_BASE_URL = 'https://chatgpt.com/backend-api/codex/'

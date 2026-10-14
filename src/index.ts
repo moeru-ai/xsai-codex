@@ -1,5 +1,5 @@
 export type { CodexModels } from './types/models'
-export { authorizeCodexHeadless } from './utils/auth'
+export { authorizeCodexHeadless, refreshCodexAccessToken } from './utils/auth'
 export type {
   CodexAuthTokens,
   CodexHeadlessAuthorizeOptions,
@@ -7,3 +7,4 @@ export type {
 } from './utils/auth'
 export { createCodex } from './utils/provider'
 export type { CreateCodexOptions, CreateCodexResult } from './utils/provider'
+export type { ResponsesProviderOptions } from '@xsai/text-responses'
