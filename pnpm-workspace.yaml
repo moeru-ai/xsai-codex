@@ -1,0 +1,7 @@
+allowBuilds:
+  esbuild: false
+
+minimumReleaseAgeExclude:
+  - '@xsai/shared@1.0.0-beta.3'
+  - '@xsai/text-responses@1.0.0-beta.3'
+  - '@xsai/text@1.0.0-beta.3'
