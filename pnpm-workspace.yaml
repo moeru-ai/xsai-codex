@@ -1,7 +1,11 @@
-allowBuilds:
-  esbuild: false
-
+minimumReleaseAgeExcludePrune: true
 minimumReleaseAgeExclude:
   - '@xsai/shared@1.0.0-beta.3'
   - '@xsai/text-responses@1.0.0-beta.3'
   - '@xsai/text@1.0.0-beta.3'
+
+trustPolicy: no-downgrade
+shellEmulator: true
+
+allowBuilds:
+  esbuild: false
