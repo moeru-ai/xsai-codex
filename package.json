@@ -48,13 +48,13 @@
     "@xsai/text-responses": "^1.0.0-beta.3"
   },
   "dependencies": {
-    "@moeru/std": "0.1.0-beta.20",
     "@xsai/shared": "^1.0.0-beta.3"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^9.5.1",
     "@clack/prompts": "^1.8.1",
     "@moeru/eslint-config": "0.1.0-beta.18",
+    "@moeru/std": "0.1.0-beta.20",
     "@moeru/tsconfig": "0.1.0-beta.18",
     "@types/node": "^26.6.5",
     "@xsai/text": "^1.0.0-beta.3",
