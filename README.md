@@ -3,7 +3,7 @@
 OpenAI Codex provider for xsAI.
 
 ```bash
-pnpm add xsai-codex @xsai/shared @xsai/text @xsai/text-responses
+pnpm add xsai-codex @xsai/text @xsai/text-responses
 ```
 
 ## Usage
@@ -16,9 +16,7 @@ import { generateText } from '@xsai/text'
 import { authorizeCodexHeadless, createCodex } from 'xsai-codex'
 
 const auth = await authorizeCodexHeadless({
-  onUserCode: ({ instructions }) => {
-    console.log(instructions)
-  },
+  onUserCode: ({ instructions }) => console.log(instructions),
 })
 
 const codex = await createCodex({ auth })
